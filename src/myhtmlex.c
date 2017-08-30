@@ -354,9 +354,9 @@ unload(ErlNifEnv *env, void *priv)
 
 static ErlNifFunc funcs[] =
 {
-  {"decode", 1, nif_decode},
-  {"open", 1, nif_open},
-  {"decode_tree", 1, nif_decode_tree}
+  {"decode", 1, nif_decode, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+  {"open", 1, nif_open, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+  {"decode_tree", 1, nif_decode_tree, ERL_NIF_DIRTY_JOB_CPU_BOUND}
 };
 
 ERL_NIF_INIT(Elixir.Myhtmlex.Decoder, funcs, &load, &reload, &upgrade, &unload)
