@@ -2,6 +2,8 @@ MIX = mix
 CFLAGS = -g -O3 -std=c99 -pedantic -Wcomment -Wall -Wextra
 # turn warnings into errors
 CFLAGS += -Werror
+# ignore unused variables
+CFLAGS += -Wno-unused-variable
 # ignore unused parameter warnings
 CFLAGS += -Wno-unused-parameter
 # ignore missing field initializers warning (because of `static ErlNifFunc funcs[]`)
