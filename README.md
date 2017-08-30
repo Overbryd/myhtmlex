@@ -19,6 +19,9 @@ So, I consider this mode of operation unsafe, and **not recommended for producti
 The other option, that I have on my roadmap, is to call into a C-Node.
 A separate OS-process that receives calls from erlang and returns to the calling process.
 
+Another option is to call into a Port driver.
+A separate OS-process that communicates via stdin/stdout.
+
 So to recap, I want a **fast** and **safe** html-parsing library for Erlang/Elixir.
 
 Not quite there, yet.
@@ -32,4 +35,5 @@ Currently under development.
 * [ ] Investigate safety and calling options
   * [x] Call as dirty-nif
   * [ ] Call as C-Node
+  * [ ] Call as Port driver
 
