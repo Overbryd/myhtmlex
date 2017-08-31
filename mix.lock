@@ -1,4 +1,6 @@
 %{"benchfella": {:hex, :benchfella, "0.3.5", "b2122c234117b3f91ed7b43b6e915e19e1ab216971154acd0a80ce0e9b8c05f5", [], [], "hexpm"},
+  "cnodex": {:git, "https://github.com/Overbryd/cnodex.git", "c1c4cde21295db07f87bb74006ab5f7222720db9", []},
   "earmark": {:hex, :earmark, "1.2.3", "206eb2e2ac1a794aa5256f3982de7a76bf4579ff91cb28d0e17ea2c9491e46a4", [], [], "hexpm"},
   "ex_doc": {:hex, :ex_doc, "0.16.3", "cd2a4cfe5d26e37502d3ec776702c72efa1adfa24ed9ce723bb565f4c30bd31a", [], [{:earmark, "~> 1.1", [hex: :earmark, repo: "hexpm", optional: false]}], "hexpm"},
-  "myhtml": {:git, "https://github.com/lexborisov/myhtml.git", "fe2cf577570666d058a2b7167c26d3384a758e19", [branch: "master"]}}
+  "myhtml": {:git, "https://github.com/lexborisov/myhtml.git", "fe2cf577570666d058a2b7167c26d3384a758e19", [branch: "master"]},
+  "nodex": {:hex, :nodex, "0.1.1", "ed2f7bbe19ea62a43ad4b7ad332eb3f9ca12c64a35a5802a0eb545b93ebe32af", [], [], "hexpm"}}

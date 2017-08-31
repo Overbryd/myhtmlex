@@ -64,6 +64,10 @@ defmodule Myhtmlex do
     | comment_node3()
   @type format_flag() :: :html_atoms | :nil_self_closing | :comment_tuple3
 
+  defp module() do
+    Application.get_env(:myhtmlex, :mode, Myhtmlex.Nif)
+  end
+
   @doc """
   Returns a tree representation from the given html string.
 
@@ -85,7 +89,7 @@ defmodule Myhtmlex do
   """
   @spec decode(String.t) :: tree()
   def decode(bin) do
-    Myhtmlex.Decoder.decode(bin)
+    decode(bin, format: [])
   end
 
   @doc """
@@ -119,7 +123,7 @@ defmodule Myhtmlex do
   """
   @spec decode(String.t, format: [format_flag()]) :: tree()
   def decode(bin, format: flags) do
-    Myhtmlex.Decoder.decode(bin, flags)
+    module().decode(bin, flags)
   end
 
   @doc """
@@ -127,7 +131,7 @@ defmodule Myhtmlex do
   """
   @spec open(String.t) :: reference()
   def open(bin) do
-    Myhtmlex.Decoder.open(bin)
+    Myhtmlex.Nif.open(bin)
   end
 
   @doc """
@@ -135,7 +139,7 @@ defmodule Myhtmlex do
   """
   @spec decode_tree(reference()) :: tree()
   def decode_tree(ref) do
-    Myhtmlex.Decoder.decode_tree(ref)
+    Myhtmlex.Nif.decode_tree(ref)
   end
 
   @doc """
@@ -143,7 +147,7 @@ defmodule Myhtmlex do
   """
   @spec decode_tree(reference(), format: [format_flag()]) :: tree()
   def decode_tree(ref, format: flags) do
-    Myhtmlex.Decoder.decode_tree(ref, flags)
+    Myhtmlex.Nif.decode_tree(ref, flags)
   end
 end
 

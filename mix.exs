@@ -4,9 +4,9 @@ defmodule Myhtmlex.Mixfile do
   def project do
     [
       app: :myhtmlex,
-      version: "0.1.3",
+      version: "0.2.0",
       elixir: "~> 1.5",
-      compilers: [:make, :elixir, :app],
+      compilers: [:myhtmlex_make, :elixir, :app],
       start_permanent: Mix.env == :prod,
       description: """
         A module to decode HTML into a tree,
@@ -46,7 +46,7 @@ defmodule Myhtmlex.Mixfile do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      mod: {Myhtmlex.Safe, []}
     ]
   end
 
@@ -56,19 +56,26 @@ defmodule Myhtmlex.Mixfile do
       # documentation helpers
       {:ex_doc, ">= 0.0.0", only: :dev},
       # benchmarking helpers
-      {:benchfella, "~> 0.3.0", only: :dev}
+      {:benchfella, "~> 0.3.0", only: :dev},
+      # cnode helpers
+      {:nodex, "~> 0.1.1"}
     ]
   end
 end
 
-defmodule Mix.Tasks.Compile.Make do
+defmodule Mix.Tasks.Compile.MyhtmlexMake do
+  @artifacts [
+    "priv/myhtmlex.so",
+    "priv/cclient"
+  ]
+
   def run(_) do
     if match? {:win32, _}, :os.type do
       IO.warn "Windows is not yet a target."
       exit(1)
     else
       {result, _error_code} = System.cmd("make",
-        ["priv/myhtmlex.so"],
+        @artifacts,
         stderr_to_stdout: true,
         env: [{"MIX_ENV", to_string(Mix.env)}]
       )
