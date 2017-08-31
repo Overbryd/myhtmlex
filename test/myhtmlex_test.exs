@@ -52,6 +52,7 @@ defmodule MyhtmlexTest do
 
   test "open and decode_tree" do
     ref = Myhtmlex.open(~s'text node')
+    assert is_reference(ref)
     assert {:html, [], [
       {:head, [], []},
       {:body, [], [
@@ -79,6 +80,12 @@ defmodule MyhtmlexTest do
         {"esi:include", [], nil}
       ]}
     ]} = Myhtmlex.decode(~s'<esi:include />')
+  end
+
+  test "open this nasty github file (works fine in parse single, parse threaded hangs)" do
+    html = File.read!("bench/github_trending_js.html")
+    ref = Myhtmlex.open(html)
+    assert is_reference(ref)
   end
 
 end

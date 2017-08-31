@@ -29,6 +29,8 @@ nif_cleanup_myhtml_tree(ErlNifEnv* env, void* obj);
 
 // consts
 ERL_NIF_TERM ATOM_NIL;
+ERL_NIF_TERM ATOM_COMMENT;
+ERL_NIF_TERM EMPTY_LIST;
 
 typedef struct {
   myhtml_t*       myhtml;

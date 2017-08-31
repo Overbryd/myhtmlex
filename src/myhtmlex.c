@@ -50,9 +50,6 @@ nif_open(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
   }
   ref->root = myhtml_tree_get_document(ref->tree);
 
-  // garbage collect argument
-  enif_release_binary(&html_bin);
-
   result = enif_make_resource(env, ref);
   return result;
 }
@@ -94,9 +91,8 @@ nif_decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
     return enif_make_badarg(env);
   }
 
-  // clear myhtml tree resources before parsing
-  myhtml_tree_clean(state->tree);
   // parse html into tree
+  // use parse_single for now, threaded mode is buggy with some files
   mystatus_t status = myhtml_parse(state->tree, MyENCODING_UTF_8, (char*) html_bin.data, (size_t) html_bin.size);
   if (status != MyHTML_STATUS_OK)
   {
@@ -108,11 +104,6 @@ nif_decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
   myhtml_tree_node_t *root = myhtml_tree_get_document(state->tree);
   result = build_tree(env, state->tree, myhtml_node_last_child(root));
 
-  // garbage collect argument
-  enif_release_binary(&html_bin);
-  // release myhtml resources
-  myhtml_node_free(root);
-
   // return tree to erlang
   return result;
 }
@@ -120,18 +111,24 @@ nif_decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
 ERL_NIF_TERM
 build_node_children(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* parent)
 {
-  ERL_NIF_TERM list;
-
-  list = enif_make_list(env, 0);
+  if (myhtml_node_is_close_self(parent))
+  {
+    return ATOM_NIL;
+  }
 
   myhtml_tree_node_t* child = myhtml_node_last_child(parent);
+  if (child == NULL)
+  {
+    return EMPTY_LIST;
+  }
+
+  ERL_NIF_TERM list = enif_make_list(env, 0);
+
   while (child)
   {
     ERL_NIF_TERM node_tuple = build_tree(env, tree, child);
     list = enif_make_list_cell(env, node_tuple, list);
 
-    // free allocated resources
-    myhtml_node_free(child);
     // get previous child, building the list from reverse
     child = myhtml_node_prev(child);
   }
@@ -142,11 +139,13 @@ build_node_children(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* par
 ERL_NIF_TERM
 build_node_attrs(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node)
 {
-  ERL_NIF_TERM list;
-  myhtml_tree_attr_t* attr;
+  myhtml_tree_attr_t* attr = myhtml_node_attribute_last(node);
+  if (attr == NULL)
+  {
+    return EMPTY_LIST;
+  }
 
-  list = enif_make_list(env, 0);
-  attr = myhtml_node_attribute_last(node);
+  ERL_NIF_TERM list = enif_make_list(env, 0);
 
   while (attr)
   {
@@ -177,8 +176,6 @@ build_node_attrs(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node)
     attr_tuple = enif_make_tuple2(env, name_bin, value_bin);
     list = enif_make_list_cell(env, attr_tuple, list);
 
-    // free allocated resources
-    myhtml_attribute_free(tree, attr);
     // get prev attribute, building the list from reverse
     attr = myhtml_attribute_prev(attr);
   }
@@ -212,8 +209,8 @@ build_tree(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node)
     memcpy(comment.data, node_comment, comment_len);
 
     return result = enif_make_tuple3(env,
-      make_atom(env, "comment"),
-      enif_make_list(env, 0),
+      ATOM_COMMENT,
+      EMPTY_LIST,
       enif_make_binary(env, &comment)
     );
   }
@@ -226,22 +223,24 @@ build_tree(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node)
     // get name of tag
     size_t tag_name_len;
     const char *tag_name = myhtml_tag_name_by_id(tree, tag_id, &tag_name_len);
-    size_t tag_string_len;
     // get namespace of tag
     size_t tag_ns_len;
     const char *tag_ns_name_ptr = myhtml_namespace_name_by_id(tag_ns, &tag_ns_len);
     char *tag_ns_buffer;
-    char buffer [tag_ns_len + 2];
+    char buffer [tag_ns_len + tag_name_len + 1];
     char *tag_string = buffer;
+    size_t tag_string_len;
 
     if (tag_ns != MyHTML_NAMESPACE_HTML)
     {
-      // tag_ns_name_ptr is unmodifyable
+      // tag_ns_name_ptr is unmodifyable, copy it in our tag_ns_buffer to make it modifyable.
       tag_ns_buffer = malloc(tag_ns_len);
       strcpy(tag_ns_buffer, tag_ns_name_ptr);
+      // lowercase tag buffer (can be removed, just a nice to have)
       tag_ns_buffer = lowercase(tag_ns_buffer);
-      tag_string_len = tag_ns_len + tag_name_len + 1; // +1 for colon
+      // prepend namespace to tag name, e.g. "svg:path"
       stpcpy(stpcpy(stpcpy(tag_string, tag_ns_buffer), ":"), tag_name);
+      tag_string_len = tag_ns_len + tag_name_len + 1; // +1 for colon
     }
     else
     {
@@ -249,8 +248,8 @@ build_tree(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node)
       tag_string_len = tag_name_len;
     }
 
-    // put non-html tags it in a binary
-    if (tag_id == MyHTML_TAG__UNDEF || tag_ns != MyHTML_NAMESPACE_HTML)
+    // put unknown and non-html tags it in a binary
+    if (tag_id == MyHTML_TAG__UNDEF || tag_id == MyHTML_TAG_LAST_ENTRY || tag_ns != MyHTML_NAMESPACE_HTML)
     {
       ErlNifBinary tag_b;
       enif_alloc_binary(tag_string_len, &tag_b);
@@ -266,14 +265,7 @@ build_tree(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node)
     attrs = build_node_attrs(env, tree, node);
 
     // add children or nil as a self-closing flag
-    if (myhtml_node_is_close_self(node))
-    {
-      children = ATOM_NIL;
-    }
-    else
-    {
-      children = build_node_children(env, tree, node);
-    }
+    children = build_node_children(env, tree, node);
 
     // free allocated resources
     if (tag_ns != MyHTML_NAMESPACE_HTML)
@@ -295,7 +287,6 @@ nif_cleanup_myhtmlex_ref(ErlNifEnv* env, void* obj)
   myhtmlex_ref_t* ref = (myhtmlex_ref_t*) obj;
   // release myhtml resources
   myhtml_tree_destroy(ref->tree);
-  myhtml_node_free(ref->root);
 }
 
 // Erlang NIF
@@ -318,10 +309,12 @@ load(ErlNifEnv *env, void **priv, ERL_NIF_TERM info)
     NULL
   );
   ATOM_NIL = make_atom(env, "nil");
+  ATOM_COMMENT = make_atom(env, "comment");
+  EMPTY_LIST = enif_make_list(env, 0);
 
   // myhtml basic init
   state->myhtml = myhtml_create();
-  myhtml_init(state->myhtml, MyHTML_OPTIONS_DEFAULT, 4, 0);
+  myhtml_init(state->myhtml, MyHTML_OPTIONS_DEFAULT, 1, 0);
   state->tree = myhtml_tree_create();
   myhtml_tree_init(state->tree, state->myhtml);
 
