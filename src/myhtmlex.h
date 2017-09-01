@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 #include "erl_nif.h"
 #include <myhtml/myhtml.h>
 #include <myhtml/mynamespace.h>

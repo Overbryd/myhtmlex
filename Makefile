@@ -1,46 +1,59 @@
 MIX = mix
-CFLAGS = -g -O3 -std=c99 -pedantic -Wcomment -Wall -Wextra
+MYHTMLEX_CFLAGS = -g -O3 -std=c99 -pedantic -Wcomment -Wall
+# we need to compile position independent code
+MYHTMLEX_CFLAGS += -fpic -DPIC
+# myhtmlex is using stpcpy, as defined in gnu string.h
+# MYHTMLEX_CFLAGS += -D_GNU_SOURCE
+# base on the same posix c source as myhtml
+# MYHTMLEX_CFLAGS += -D_POSIX_C_SOURCE=199309
 # turn warnings into errors
-CFLAGS += -Werror
+# MYHTMLEX_CFLAGS += -Werror
 # ignore unused variables
-CFLAGS += -Wno-unused-variable
+# MYHTMLEX_CFLAGS += -Wno-unused-variable
 # ignore unused parameter warnings
-CFLAGS += -Wno-unused-parameter
-# ignore missing field initializers warning (because of `static ErlNifFunc funcs[]`)
-CFLAGS += -Wno-missing-field-initializers
+MYHTMLEX_CFLAGS += -Wno-unused-parameter
 
 # set erlang include path
 ERLANG_PATH = $(shell erl -eval 'io:format("~s", [lists:concat([code:root_dir(), "/erts-", erlang:system_info(version), "/include"])])' -s init stop -noshell)
-CFLAGS += -I$(ERLANG_PATH)
+MYHTMLEX_CFLAGS += -I$(ERLANG_PATH)
 
-# either we have not fetched myhtml, assume its in a sibling directory
-ifeq ($(wildcard deps/myhtml),)
-	MYHTML_PATH = ../myhtml
-# or we fetched it as a mix dependency
-else
-	MYHTML_PATH = deps/myhtml
+# expecting myhtml fetched as a mix dependency
+MYHTML_PATH = deps/myhtml
+MYHTML_STATIC = $(MYHTML_PATH)/lib/libmyhtml_static.a
+MYHTMLEX_CFLAGS += -I$(MYHTML_PATH)/include
+
+# that would be used for a dynamically linked build
+# MYHTMLEX_CFLAGS += -L$(MYHTML_PATH)/lib
+
+MYHTMLEX_LDFLAGS = -shared
+
+# platform specific
+UNAME = $(shell uname -s)
+ifeq ($(wilcard Makefile.$(UNAME)),)
+	include Makefile.$(UNAME)
 endif
 
-CFLAGS += -I$(MYHTML_PATH)/source
+.PHONY: all myhtmlex
 
-# I have no idea yet what this does, something for macOS presuambly
-ifeq ($(shell uname),Darwin)
-	LDFLAGS += -dynamiclib -undefined dynamic_lookup
-endif
+all: myhtmlex
 
-.PHONY: all myhtml clear
-
-all: myhtml
-
-myhtml:
+myhtmlex: priv/myhtmlex.so
 	$(MIX) compile
 
-priv/myhtmlex.so: src/myhtmlex.c
+deps/myhtml:
+	$(MIX) deps.get
+
+$(MYHTML_STATIC): deps/myhtml
 	$(MAKE) -C $(MYHTML_PATH) library
-	$(CC) $(CFLAGS) -shared $(LDFLAGS) -o $@ src/myhtmlex.c $(MYHTML_PATH)/lib/libmyhtml_static.a
+
+priv/myhtmlex.so: src/myhtmlex.c $(MYHTML_STATIC)
+	test -d priv || mkdir priv
+	$(CC) $(MYHTMLEX_CFLAGS) $(MYHTMLEX_LDFLAGS) -o $@ $< $(MYHTML_STATIC)
 
 clean:
 	$(MIX) clean
-	$(MAKE) -C $(MYHTML_PATH) clean
 	$(RM) priv/myhtmlex.so
+
+clean-myhtml:
+	$(MAKE) -C $(MYHTML_PATH) clean
 
