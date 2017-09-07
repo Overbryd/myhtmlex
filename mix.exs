@@ -38,7 +38,6 @@ defmodule Myhtmlex.Mixfile do
       },
       files: [
         "lib",
-        "src",
         "c_src",
         "Makefile",
         "Makefile.Darwin",

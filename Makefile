@@ -50,14 +50,17 @@ deps/myhtml:
 $(MYHTML_STATIC): $(MYHTML_PATH)
 	$(MAKE) -C $(MYHTML_PATH) library
 
-priv/myhtmlex.so: src/myhtmlex.c $(MYHTML_STATIC)
+priv/myhtmlex.so: c_src/myhtmlex.c $(MYHTML_STATIC)
 	test -d priv || mkdir priv
 	$(CC) $(MYHTMLEX_CFLAGS) $(MYHTMLEX_LDFLAGS) -o $@ $< $(MYHTML_STATIC)
 
-clean:
+clean: clean-myhtml
 	$(MIX) clean
 	$(RM) priv/myhtmlex.so
 
 clean-myhtml:
 	$(MAKE) -C $(MYHTML_PATH) clean
+
+publish: clean
+	$(MIX) hex.publish
 
