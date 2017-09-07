@@ -2,6 +2,14 @@
 
 Bindings for lexborisov's [myhtml](https://github.com/lexborisov/myhtml).
 
+* Available as a hex package: `{:myhtmlex, "~> 0.1.0"}`
+* [Documentation](https://hexdocs.pm/myhtmlex/Myhtmlex.html)
+
+## Example
+
+    iex> Myhtmlex.decode("<h1>Hello world</h1>")
+    {"html", [], [{"head", [], []}, {"body", [], [{"h1", [], ["Hello world"]}]}]}
+
 ## Thoughts
 
 I need to a fast html-parsing library in Erlang/Elixir.
