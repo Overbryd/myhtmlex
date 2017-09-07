@@ -22,16 +22,23 @@ nif_open(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]);
 ERL_NIF_TERM
 build_node_attrs(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node);
 ERL_NIF_TERM
-build_tree(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node);
+build_tree(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node, unsigned char* flags);
 ERL_NIF_TERM
-build_node_children(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node);
+build_node_children(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node, unsigned char* flags);
 void
 nif_cleanup_myhtml_tree(ErlNifEnv* env, void* obj);
+unsigned char
+read_parse_flags(ErlNifEnv* env, const ERL_NIF_TERM* options);
 
 // consts
 ERL_NIF_TERM ATOM_NIL;
 ERL_NIF_TERM ATOM_COMMENT;
+ERL_NIF_TERM ATOM_HTML_ATOMS;
+ERL_NIF_TERM ATOM_NIL_SELF_CLOSING;
 ERL_NIF_TERM EMPTY_LIST;
+const unsigned char FLAG_HTML_ATOMS       = 1 << 0;
+const unsigned char FLAG_NIL_SELF_CLOSING = 1 << 1;
+const unsigned char FLAG_COMMENT_TUPLE3   = 1 << 2;
 
 typedef struct {
   myhtml_t*       myhtml;

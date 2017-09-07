@@ -58,6 +58,7 @@ ERL_NIF_TERM
 nif_decode_tree(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
   ERL_NIF_TERM result;
   myhtmlex_ref_t* ref;
+  unsigned char parse_flags = 0;
 
   // fetch nif state
   myhtmlex_state_t* state = (myhtmlex_state_t*) enif_priv_data(env);
@@ -67,9 +68,19 @@ nif_decode_tree(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
   {
     return enif_make_badarg(env);
   }
+  // we should have received format flags in a list
+  if (argc == 2)
+  {
+    if (!enif_is_list(env, argv[1]))
+    {
+      // blame the user if second argument is not a list
+      return enif_make_badarg(env);
+    }
+    parse_flags = read_parse_flags(env, &argv[1]);
+  }
 
   // build erlang tree
-  result = build_tree(env, ref->tree, myhtml_node_last_child(ref->root));
+  result = build_tree(env, ref->tree, myhtml_node_last_child(ref->root), &parse_flags);
 
   // return tree to erlang
   return result;
@@ -78,6 +89,7 @@ nif_decode_tree(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
 ERL_NIF_TERM
 nif_decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
   ERL_NIF_TERM result;
+  unsigned char parse_flags = 0;
 
   // fetch nif state
   myhtmlex_state_t* state = (myhtmlex_state_t*) enif_priv_data(env);
@@ -85,10 +97,20 @@ nif_decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
   // placeholder for the html binary we want to read from erlang caller
   ErlNifBinary html_bin;
   // read binary into &html_bin from argv[0] (first argument)
-  if (!enif_inspect_iolist_as_binary(env, argv[0], &html_bin))
+  if (argc < 1 || !enif_inspect_iolist_as_binary(env, argv[0], &html_bin))
   {
     // blame the user if html_bin is not a binary
     return enif_make_badarg(env);
+  }
+  // we should have received format flags in a list
+  if (argc == 2)
+  {
+    if (!enif_is_list(env, argv[1]))
+    {
+      // blame the user if second argument is not a list
+      return enif_make_badarg(env);
+    }
+    parse_flags = read_parse_flags(env, &argv[1]);
   }
 
   // parse html into tree
@@ -102,16 +124,41 @@ nif_decode(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
 
   // build erlang tree
   myhtml_tree_node_t *root = myhtml_tree_get_document(state->tree);
-  result = build_tree(env, state->tree, myhtml_node_last_child(root));
+  result = build_tree(env, state->tree, myhtml_node_last_child(root), &parse_flags);
 
   // return tree to erlang
   return result;
 }
 
-ERL_NIF_TERM
-build_node_children(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* parent)
+unsigned char
+read_parse_flags(ErlNifEnv* env, const ERL_NIF_TERM* options)
 {
-  if (myhtml_node_is_close_self(parent))
+  unsigned char parse_flags = 0;
+  ERL_NIF_TERM flag;
+
+  // only look at 2 flags max (more are not implemented yet)
+  for (int i = 0; i < 2; i++)
+  {
+    if (!enif_get_list_cell(env, *options, &flag, (ERL_NIF_TERM*)options)) break;
+    if (!enif_is_atom(env, flag)) return enif_make_badarg(env);
+    // set parse flags
+    if (enif_compare(flag, ATOM_HTML_ATOMS) == 0)
+    {
+      parse_flags |= FLAG_HTML_ATOMS;
+    }
+    else if (enif_compare(flag, ATOM_NIL_SELF_CLOSING) == 0)
+    {
+      parse_flags |= FLAG_NIL_SELF_CLOSING;
+    }
+  }
+
+  return parse_flags;
+}
+
+ERL_NIF_TERM
+build_node_children(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* parent, unsigned char* parse_flags)
+{
+  if (myhtml_node_is_close_self(parent) && (*parse_flags & FLAG_NIL_SELF_CLOSING))
   {
     return ATOM_NIL;
   }
@@ -119,14 +166,21 @@ build_node_children(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* par
   myhtml_tree_node_t* child = myhtml_node_last_child(parent);
   if (child == NULL)
   {
-    return EMPTY_LIST;
+    if (myhtml_node_is_void_element(parent) && (*parse_flags & FLAG_NIL_SELF_CLOSING))
+    {
+      return ATOM_NIL;
+    }
+    else
+    {
+      return EMPTY_LIST;
+    }
   }
 
   ERL_NIF_TERM list = enif_make_list(env, 0);
 
   while (child)
   {
-    ERL_NIF_TERM node_tuple = build_tree(env, tree, child);
+    ERL_NIF_TERM node_tuple = build_tree(env, tree, child, parse_flags);
     list = enif_make_list_cell(env, node_tuple, list);
 
     // get previous child, building the list from reverse
@@ -184,7 +238,7 @@ build_node_attrs(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node)
 }
 
 ERL_NIF_TERM
-build_tree(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node)
+build_tree(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node, unsigned char* parse_flags)
 {
   ERL_NIF_TERM result;
   myhtml_tag_id_t tag_id = myhtml_node_tag_id(node);
@@ -198,7 +252,7 @@ build_tree(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node)
     enif_alloc_binary(text_len, &text);
     memcpy(text.data, node_text, text_len);
 
-    return result = enif_make_binary(env, &text);
+    result = enif_make_binary(env, &text);
   }
   else if (tag_id == MyHTML_TAG__COMMENT)
   {
@@ -208,11 +262,18 @@ build_tree(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node)
     enif_alloc_binary(comment_len, &comment);
     memcpy(comment.data, node_comment, comment_len);
 
-    return result = enif_make_tuple3(env,
-      ATOM_COMMENT,
-      EMPTY_LIST,
-      enif_make_binary(env, &comment)
-    );
+    if (*parse_flags & FLAG_COMMENT_TUPLE3)
+    {
+      result = enif_make_tuple3(env,
+        ATOM_COMMENT,
+        EMPTY_LIST,
+        enif_make_binary(env, &comment)
+      );
+    }
+    else
+    {
+      result = enif_make_tuple2(env, ATOM_COMMENT, enif_make_binary(env, &comment));
+    }
   }
   else
   {
@@ -249,7 +310,7 @@ build_tree(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node)
     }
 
     // put unknown and non-html tags it in a binary
-    if (tag_id == MyHTML_TAG__UNDEF || tag_id == MyHTML_TAG_LAST_ENTRY || tag_ns != MyHTML_NAMESPACE_HTML)
+    if (!(*parse_flags & FLAG_HTML_ATOMS) || (tag_id == MyHTML_TAG__UNDEF || tag_id == MyHTML_TAG_LAST_ENTRY || tag_ns != MyHTML_NAMESPACE_HTML))
     {
       ErlNifBinary tag_b;
       enif_alloc_binary(tag_string_len, &tag_b);
@@ -265,7 +326,7 @@ build_tree(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node)
     attrs = build_node_attrs(env, tree, node);
 
     // add children or nil as a self-closing flag
-    children = build_node_children(env, tree, node);
+    children = build_node_children(env, tree, node, parse_flags);
 
     // free allocated resources
     if (tag_ns != MyHTML_NAMESPACE_HTML)
@@ -273,12 +334,14 @@ build_tree(ErlNifEnv* env, myhtml_tree_t* tree, myhtml_tree_node_t* node)
       free(tag_ns_buffer);
     }
 
-    return result = enif_make_tuple3(env,
+    result = enif_make_tuple3(env,
       tag,
       attrs,
       children
     );
   }
+
+  return result;
 }
 
 void
@@ -310,6 +373,8 @@ load(ErlNifEnv *env, void **priv, ERL_NIF_TERM info)
   );
   ATOM_NIL = make_atom(env, "nil");
   ATOM_COMMENT = make_atom(env, "comment");
+  ATOM_HTML_ATOMS = make_atom(env, "html_atoms");
+  ATOM_NIL_SELF_CLOSING = make_atom(env, "nil_self_closing");
   EMPTY_LIST = enif_make_list(env, 0);
 
   // myhtml basic init
@@ -348,8 +413,10 @@ unload(ErlNifEnv *env, void *priv)
 static ErlNifFunc funcs[] =
 {
   {"decode", 1, nif_decode, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+  {"decode", 2, nif_decode, ERL_NIF_DIRTY_JOB_CPU_BOUND},
   {"open", 1, nif_open, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-  {"decode_tree", 1, nif_decode_tree, ERL_NIF_DIRTY_JOB_CPU_BOUND}
+  {"decode_tree", 1, nif_decode_tree, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+  {"decode_tree", 2, nif_decode_tree, ERL_NIF_DIRTY_JOB_CPU_BOUND}
 };
 
 ERL_NIF_INIT(Elixir.Myhtmlex.Decoder, funcs, &load, &reload, &upgrade, &unload)

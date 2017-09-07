@@ -37,7 +37,8 @@ defmodule Myhtmlex.Mixfile do
   defp deps do
     [
       # myhtml c library
-      {:myhtml, github: "lexborisov/myhtml", tag: "v4.0.1", app: false},
+      {:myhtml, github: "Overbryd/myhtml", branch: "feat/node-is-void-element", app: false},
+      # {:myhtml, github: "lexborisov/myhtml", tag: "v4.0.2", app: false},
       # documentation helpers
       {:ex_doc, ">= 0.0.0", only: :dev},
       # benchmarking helpers
