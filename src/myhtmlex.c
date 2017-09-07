@@ -150,6 +150,10 @@ read_parse_flags(ErlNifEnv* env, const ERL_NIF_TERM* options)
     {
       parse_flags |= FLAG_NIL_SELF_CLOSING;
     }
+    else if (enif_compare(flag, ATOM_COMMENT_TUPLE3) == 0)
+    {
+      parse_flags |= FLAG_COMMENT_TUPLE3;
+    }
   }
 
   return parse_flags;
@@ -375,6 +379,7 @@ load(ErlNifEnv *env, void **priv, ERL_NIF_TERM info)
   ATOM_COMMENT = make_atom(env, "comment");
   ATOM_HTML_ATOMS = make_atom(env, "html_atoms");
   ATOM_NIL_SELF_CLOSING = make_atom(env, "nil_self_closing");
+  ATOM_COMMENT_TUPLE3 = make_atom(env, "comment_tuple3");
   EMPTY_LIST = enif_make_list(env, 0);
 
   // myhtml basic init

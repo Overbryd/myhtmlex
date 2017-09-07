@@ -112,10 +112,20 @@ defmodule MyhtmlexTest do
     ]} = Myhtmlex.decode(~s'<esi:include />', format: [:html_atoms, :nil_self_closing])
   end
 
-  test "open this nasty github file (works fine in parse single, parse threaded hangs)" do
+  test "html comments" do
+    assert {:html, [], [
+      {:head, [], []},
+      {:body, [], [
+        comment: " a comment "
+      ]}
+    ]} = Myhtmlex.decode(~s'<body><!-- a comment --></body>', format: [:html_atoms])
+  end
+
+  test "parse a larger file (131K)" do
     html = File.read!("bench/github_trending_js.html")
     ref = Myhtmlex.open(html)
     assert is_reference(ref)
+    assert is_tuple(Myhtmlex.decode_tree(ref))
   end
 
 end

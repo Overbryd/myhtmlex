@@ -1,0 +1,3 @@
+[submodule "c_src/myhtml"]
+	path = c_src/myhtml
+	url = https://github.com/lexborisov/myhtml.git
