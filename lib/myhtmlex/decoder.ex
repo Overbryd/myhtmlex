@@ -1,4 +1,5 @@
 defmodule Myhtmlex.Decoder do
+  @moduledoc false
   @on_load { :init, 0 }
 
   app = Mix.Project.config[:app]

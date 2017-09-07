@@ -18,7 +18,11 @@ ERLANG_PATH = $(shell erl -eval 'io:format("~s", [lists:concat([code:root_dir(),
 MYHTMLEX_CFLAGS += -I$(ERLANG_PATH)
 
 # expecting myhtml fetched as a mix dependency
-MYHTML_PATH = deps/myhtml
+ifeq ($(wildcard c_src/myhtml),)
+	MYHTML_PATH = deps/myhtml
+else
+	MYHTML_PATH = c_src/myhtml
+endif
 MYHTML_STATIC = $(MYHTML_PATH)/lib/libmyhtml_static.a
 MYHTMLEX_CFLAGS += -I$(MYHTML_PATH)/include
 
@@ -43,7 +47,7 @@ myhtmlex: priv/myhtmlex.so
 deps/myhtml:
 	$(MIX) deps.get
 
-$(MYHTML_STATIC): deps/myhtml
+$(MYHTML_STATIC): $(MYHTML_PATH)
 	$(MAKE) -C $(MYHTML_PATH) library
 
 priv/myhtmlex.so: src/myhtmlex.c $(MYHTML_STATIC)

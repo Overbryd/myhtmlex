@@ -4,7 +4,6 @@ defmodule Mix.Tasks.Compile.Myhtml do
       IO.warn "Windows is not yet a target."
       exit(1)
     else
-      File.mkdir_p("priv")
       {result, _error_code} = System.cmd("make", ["priv/myhtmlex.so"], stderr_to_stdout: true)
       IO.binwrite result
     end
@@ -22,7 +21,32 @@ defmodule Myhtmlex.Mixfile do
       elixir: "~> 1.5",
       compilers: [:myhtml, :elixir, :app],
       start_permanent: Mix.env == :prod,
+      description: "A module to decode HTML into a tree, porting all properties of the underlying library myhtml, being fast and correct in regards to the html spec.",
+      package: package(),
       deps: deps()
+    ]
+  end
+
+  def package do
+    [
+      maintainers: ["Lukas Rieder"],
+      licenses: ["GNU LGPL"],
+      links: %{
+        "Github" => "https://github.com/Overbryd/myhtmlex",
+        "Issues" => "https://github.com/Overbryd/myhtmlex/issues",
+        "MyHTML" => "https://github.com/lexborisov/myhtml"
+      },
+      files: [
+        "lib",
+        "src",
+        "c_src",
+        "Makefile",
+        "Makefile.Darwin",
+        "Makefile.Linux",
+        "mix.exs",
+        "README.md",
+        "LICENSE"
+      ]
     ]
   end
 
@@ -36,9 +60,8 @@ defmodule Myhtmlex.Mixfile do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # myhtml c library
-      {:myhtml, github: "Overbryd/myhtml", branch: "feat/node-is-void-element", app: false},
-      # {:myhtml, github: "lexborisov/myhtml", tag: "v4.0.2", app: false},
+      # in dev environment, manage myhtml c library with mix
+      {:myhtml, github: "lexborisov/myhtml", branch: "master", app: false, only: :dev},
       # documentation helpers
       {:ex_doc, ">= 0.0.0", only: :dev},
       # benchmarking helpers
