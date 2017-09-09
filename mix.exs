@@ -17,7 +17,7 @@ defmodule Myhtmlex.Mixfile do
   def project do
     [
       app: :myhtmlex,
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.5",
       compilers: [:myhtml, :elixir, :app],
       start_permanent: Mix.env == :prod,
