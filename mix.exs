@@ -4,7 +4,11 @@ defmodule Mix.Tasks.Compile.Myhtml do
       IO.warn "Windows is not yet a target."
       exit(1)
     else
-      {result, _error_code} = System.cmd("make", ["priv/myhtmlex.so"], stderr_to_stdout: true)
+      {result, _error_code} = System.cmd("make",
+        ["priv/myhtmlex.so"],
+        stderr_to_stdout: true,
+        env: [{"MIX_ENV", to_string(Mix.env)}]
+      )
       IO.binwrite result
     end
     :ok
@@ -17,7 +21,7 @@ defmodule Myhtmlex.Mixfile do
   def project do
     [
       app: :myhtmlex,
-      version: "0.1.1",
+      version: "0.1.2",
       elixir: "~> 1.5",
       compilers: [:myhtml, :elixir, :app],
       start_permanent: Mix.env == :prod,

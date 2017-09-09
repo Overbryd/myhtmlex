@@ -21,7 +21,19 @@ RUN apt-get update \
 
 COPY . ./
 
-RUN make \
+# Test build
+RUN mix deps.get \
+  && make \
   && mix test \
-  && mix bench
+  && mix bench \
+  && make clean
+
+# Test that it works as a dependency
+RUN cd .. \
+  && mix new myhtmlex_pkg_test \
+  && cd myhtmlex_pkg_test \
+  && sed -i"" 's/^.*dep_from_hexpm.*$/      {:myhtmlex, path: "..\/myhtmlex"}/' mix.exs \
+  && mix deps.get \
+  && mix compile \
+  && mix run -e 'IO.inspect Myhtmlex.decode("foo")'
 

@@ -18,6 +18,11 @@ erl_crash.dump
 
 # Also ignore archive artifacts (built via "mix archive.build").
 *.ez
+c_src/**/*.a
+c_src/**/*.o
+c_src/**/.so
+c_src/**/.dylib
+c_src/**/bin
 priv/*
 bench/snapshots/*
 
