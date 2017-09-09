@@ -17,12 +17,11 @@ MYHTMLEX_CFLAGS += -Wno-unused-parameter
 ERLANG_PATH = $(shell erl -eval 'io:format("~s", [lists:concat([code:root_dir(), "/erts-", erlang:system_info(version), "/include"])])' -s init stop -noshell)
 MYHTMLEX_CFLAGS += -I$(ERLANG_PATH)
 
+# expecting myhtml as a submodule in c_src/
+# that way we can pin a version and package the whole thing in hex
+# hex does not allow for non-app related dependencies.
 # expecting myhtml fetched as a mix dependency
-ifeq ($(wildcard c_src/myhtml),)
-	MYHTML_PATH = deps/myhtml
-else
-	MYHTML_PATH = c_src/myhtml
-endif
+MYHTML_PATH = c_src/myhtml
 MYHTML_STATIC = $(MYHTML_PATH)/lib/libmyhtml_static.a
 MYHTMLEX_CFLAGS += -I$(MYHTML_PATH)/include
 

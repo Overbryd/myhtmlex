@@ -59,8 +59,6 @@ defmodule Myhtmlex.Mixfile do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # in dev environment, manage myhtml c library with mix
-      {:myhtml, github: "lexborisov/myhtml", branch: "master", app: false, only: :dev},
       # documentation helpers
       {:ex_doc, ">= 0.0.0", only: :dev},
       # benchmarking helpers
