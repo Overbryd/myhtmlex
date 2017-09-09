@@ -34,6 +34,10 @@ So to recap, I want a **fast** and **safe** html-parsing library for Erlang/Elix
 
 Not quite there, yet.
 
+## Development
+
+* Please make sure you do `git submodule update` after a checkout/pull
+
 ## Status
 
 Currently under development.
@@ -42,6 +46,6 @@ Currently under development.
 * [ ] Expose node-retrieval functions
 * [ ] Investigate safety and calling options
   * [x] Call as dirty-nif
-  * [ ] Call as C-Node
+  * [x] Call as C-Node (check branch `c-node`)
   * [ ] Call as Port driver
 
