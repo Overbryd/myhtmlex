@@ -36,29 +36,22 @@ ifeq ($(wilcard Makefile.$(UNAME)),)
 	include Makefile.$(UNAME)
 endif
 
-.PHONY: all myhtmlex
+.PHONY: all
 
 all: myhtmlex
 
 myhtmlex: priv/myhtmlex.so
 	$(MIX) compile
 
-deps/myhtml:
-	$(MIX) deps.get
-
 $(MYHTML_STATIC): $(MYHTML_PATH)
 	$(MAKE) -C $(MYHTML_PATH) library
 
 priv/myhtmlex.so: c_src/myhtmlex.c $(MYHTML_STATIC)
-	test -d priv || mkdir priv
 	$(CC) $(MYHTMLEX_CFLAGS) $(MYHTMLEX_LDFLAGS) -o $@ $< $(MYHTML_STATIC)
 
-clean: clean-myhtml
-	$(MIX) clean
-	$(RM) priv/myhtmlex.so
-
-clean-myhtml:
+clean:
 	$(MAKE) -C $(MYHTML_PATH) clean
+	$(RM) -r priv/*
 
 publish: clean
 	$(MIX) hex.publish

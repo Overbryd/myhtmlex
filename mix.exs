@@ -1,31 +1,19 @@
-defmodule Mix.Tasks.Compile.Myhtml do
-  def run(_) do
-    if match? {:win32, _}, :os.type do
-      IO.warn "Windows is not yet a target."
-      exit(1)
-    else
-      {result, _error_code} = System.cmd("make",
-        ["priv/myhtmlex.so"],
-        stderr_to_stdout: true,
-        env: [{"MIX_ENV", to_string(Mix.env)}]
-      )
-      IO.binwrite result
-    end
-    :ok
-  end
-end
-
 defmodule Myhtmlex.Mixfile do
   use Mix.Project
 
   def project do
     [
       app: :myhtmlex,
-      version: "0.1.2",
+      version: "0.1.3",
       elixir: "~> 1.5",
-      compilers: [:myhtml, :elixir, :app],
+      compilers: [:make, :elixir, :app],
       start_permanent: Mix.env == :prod,
-      description: "A module to decode HTML into a tree, porting all properties of the underlying library myhtml, being fast and correct in regards to the html spec.",
+      description: """
+        A module to decode HTML into a tree,
+        porting all properties of the underlying
+        library myhtml, being fast and correct
+        in regards to the html spec.
+      """,
       package: package(),
       deps: deps()
     ]
@@ -43,6 +31,8 @@ defmodule Myhtmlex.Mixfile do
       files: [
         "lib",
         "c_src",
+        "priv/.gitignore",
+        "test",
         "Makefile",
         "Makefile.Darwin",
         "Makefile.Linux",
@@ -70,3 +60,27 @@ defmodule Myhtmlex.Mixfile do
     ]
   end
 end
+
+defmodule Mix.Tasks.Compile.Make do
+  def run(_) do
+    if match? {:win32, _}, :os.type do
+      IO.warn "Windows is not yet a target."
+      exit(1)
+    else
+      {result, _error_code} = System.cmd("make",
+        ["priv/myhtmlex.so"],
+        stderr_to_stdout: true,
+        env: [{"MIX_ENV", to_string(Mix.env)}]
+      )
+      IO.binwrite result
+    end
+    :ok
+  end
+
+  def clean() do
+    {result, _error_code} = System.cmd("make", ["clean"], stderr_to_stdout: true)
+    Mix.shell.info result
+    :ok
+  end
+end
+
