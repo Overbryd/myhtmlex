@@ -24,5 +24,6 @@ c_src/**/.so
 c_src/**/.dylib
 c_src/**/bin
 priv/*
+!priv/.gitignore
 bench/snapshots/*
 

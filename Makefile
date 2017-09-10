@@ -51,7 +51,8 @@ priv/myhtmlex.so: c_src/myhtmlex.c $(MYHTML_STATIC)
 
 clean:
 	$(MAKE) -C $(MYHTML_PATH) clean
-	$(RM) -r priv/*
+	$(RM) -r priv/myhtmlex*
+	$(RM) myhtmlex-*.tar
 
 publish: clean
 	$(MIX) hex.publish
