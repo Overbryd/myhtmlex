@@ -44,6 +44,9 @@ ifeq ($(wilcard Makefile.$(UNAME)),)
 	include Makefile.$(UNAME)
 endif
 
+# enumerate docker build tests
+BUILD_TESTS := $(patsubst %.dockerfile, %.dockerfile.PHONY, $(wildcard ./build-test/*.dockerfile))
+
 .PHONY: all
 
 all: myhtmlex
@@ -71,4 +74,12 @@ clean-myhtml:
 
 publish: clean
 	$(MIX) hex.publish
+
+test:
+	$(MIX) test
+
+build-tests: test $(BUILD_TESTS)
+
+%.dockerfile.PHONY: %.dockerfile
+	docker build -f $< .
 
