@@ -21,3 +21,4 @@ erl_crash.dump
 priv/*
 !priv/.gitignore
 bench/snapshots
+package-test

@@ -3,6 +3,7 @@ defmodule Myhtmlex.Mixfile do
 
   def project do
     [
+      name: "Myhtmlex",
       app: :myhtmlex,
       version: "0.2.0",
       elixir: "~> 1.5",
@@ -46,7 +47,11 @@ defmodule Myhtmlex.Mixfile do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      mod: {Myhtmlex.Safe, []}
+      mod: {Myhtmlex.Safe, []},
+      registered: [Myhtmlex.Safe],
+      env: [
+        mode: Myhtmlex.Nif
+      ]
     ]
   end
 
@@ -54,7 +59,7 @@ defmodule Myhtmlex.Mixfile do
   defp deps do
     [
       # documentation helpers
-      {:ex_doc, ">= 0.0.0", only: :dev},
+      {:ex_doc, ">= 0.0.0", only: :docs},
       # benchmarking helpers
       {:benchfella, "~> 0.3.0", only: :dev},
       # cnode helpers

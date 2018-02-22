@@ -64,6 +64,7 @@ clean: clean-myhtml
 	$(RM) -r priv/myhtmlex*
 	$(RM) priv/cclient
 	$(RM) myhtmlex-*.tar
+	$(RM) -r package-test
 
 clean-myhtml:
 	$(MAKE) -C $(MYHTML_PATH) clean

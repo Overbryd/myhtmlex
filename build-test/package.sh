@@ -24,14 +24,19 @@ tar -xzf *.tar.gz
 cd ..
 mix new myhtmlex_pkg_test
 cd myhtmlex_pkg_test
-sed -i"" -e 's/^.*dep_from_hexpm.*$/      {:myhtmlex, path: "..\/myhtmlex-local", app: false}/' mix.exs  
+sed -i"" -e 's/^.*dep_from_hexpm.*$/      {:myhtmlex, path: "..\/myhtmlex-local", app: false}/' mix.exs
 mix deps.get
 mix compile
-mix run -e 'IO.inspect Myhtmlex.decode("foo")'
+mix run -e 'IO.inspect {"html", [], [{"head", [], []}, {"body", [], ["foo"]}]} = Myhtmlex.decode("foo")'
+
+sed -i"" -e 's/extra_applications: \[:logger\]$/extra_applications: \[:logger, :myhtmlex\]/' mix.exs
+sed -i"" -e 's/^.*myhtmlex-local.*$/      {:myhtmlex, path: "..\/myhtmlex-local"}/' mix.exs
+mix deps.get
+mix compile
+mix run -e 'IO.inspect {"html", [], [{"head", [], []}, {"body", [], ["foo"]}]} = Myhtmlex.Safe.decode("foo")'
 
 trap : 0
 
-rm -rf $start_dir/package-test
 cd $start_dir
 echo "ok"
 
