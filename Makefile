@@ -58,7 +58,7 @@ priv/myhtmlex.so: c_src/myhtmlex.c $(MYHTML_STATIC)
 	$(CC) $(MYHTMLEX_CFLAGS) $(MYHTMLEX_LDFLAGS) -o $@ $< $(MYHTML_STATIC)
 
 priv/cclient: c_src/cclient.c $(MYHTML_STATIC)
-	$(CC) $(CNODE_CFLAGS) -o $@ $< $(MYHTML_STATIC)
+	$(CC) -o $@ $< $(MYHTML_STATIC) $(CNODE_CFLAGS)
 
 clean: clean-myhtml
 	$(RM) -r priv/myhtmlex*
