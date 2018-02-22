@@ -25,6 +25,8 @@ MYHTMLEX_CFLAGS += -I$(ERLANG_PATH)/include
 MYHTML_PATH = c_src/myhtml
 MYHTML_STATIC = $(MYHTML_PATH)/lib/libmyhtml_static.a
 MYHTMLEX_CFLAGS += -I$(MYHTML_PATH)/include
+# avoid undefined reference errors to phtread_mutex_trylock
+MYHTMLEX_CFLAGS += -lpthread
 
 # that would be used for a dynamically linked build
 # MYHTMLEX_CFLAGS += -L$(MYHTML_PATH)/lib
