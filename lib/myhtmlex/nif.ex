@@ -9,23 +9,18 @@ defmodule Myhtmlex.Nif do
     :ok = :erlang.load_nif(path, 0)
   end
 
-  @doc false
   def decode(bin)
   def decode(_), do: exit(:nif_library_not_loaded)
 
-  @doc false
   def decode(bin, flags)
   def decode(_, _), do: exit(:nif_library_not_loaded)
 
-  @doc false
   def open(bin)
   def open(_), do: exit(:nif_library_not_loaded)
 
-  @doc false
   def decode_tree(tree)
   def decode_tree(_), do: exit(:nif_library_not_loaded)
 
-  @doc false
   def decode_tree(tree, flags)
   def decode_tree(_, _), do: exit(:nif_library_not_loaded)
 end
