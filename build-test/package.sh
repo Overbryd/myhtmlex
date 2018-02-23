@@ -26,13 +26,13 @@ mix new myhtmlex_pkg_test
 cd myhtmlex_pkg_test
 
 # Default operation
-sed -i "" -e 's/^.*dep_from_hexpm.*$/      {:myhtmlex, path: "..\/myhtmlex-local"}/' mix.exs
+sed -i -e 's/^.*dep_from_hexpm.*$/      {:myhtmlex, path: "..\/myhtmlex-local"}/' mix.exs
 mix deps.get
 mix compile
 mix run -e 'IO.inspect {"html", [], [{"head", [], []}, {"body", [], ["foo"]}]} = Myhtmlex.decode("foo")'
 
 # Nif operation
-sed -i "" -e 's/^.*myhtmlex-local.*$/      {:myhtmlex, path: "..\/myhtmlex-local", runtime: false}/' mix.exs
+sed -i -e 's/^.*myhtmlex-local.*$/      {:myhtmlex, path: "..\/myhtmlex-local", runtime: false}/' mix.exs
 echo "config :myhtmlex, mode: Myhtmlex.Nif" >> config/config.exs
 mix run -e 'IO.inspect {"html", [], [{"head", [], []}, {"body", [], ["foo"]}]} = Myhtmlex.decode("foo")'
 
