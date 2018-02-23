@@ -3,20 +3,22 @@ defmodule Myhtmlex.Mixfile do
 
   def project do
     [
-      name: "Myhtmlex",
       app: :myhtmlex,
       version: "0.2.0",
       elixir: "~> 1.5",
-      compilers: [:myhtmlex_make, :elixir, :app],
+      deps: deps(),
+      package: package(),
+      compilers: [:myhtmlex_make] ++ Mix.compilers,
+      build_embedded: Mix.env == :prod,
       start_permanent: Mix.env == :prod,
+      name: "Myhtmlex",
       description: """
         A module to decode HTML into a tree,
         porting all properties of the underlying
         library myhtml, being fast and correct
         in regards to the html spec.
       """,
-      package: package(),
-      deps: deps()
+      docs: docs()
     ]
   end
 
@@ -44,18 +46,18 @@ defmodule Myhtmlex.Mixfile do
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
   def application do
     [
+      extra_applications: [:logger],
       mod: {Myhtmlex.Safe, []},
-      registered: [Myhtmlex.Safe],
+      # used to detect conflicts with other applications named processes
+      registered: [Myhtmlex.Safe.Cnode, Myhtmlex.Safe.Supervisor],
       env: [
         mode: Myhtmlex.Safe
       ]
     ]
   end
 
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       # documentation helpers
@@ -64,6 +66,12 @@ defmodule Myhtmlex.Mixfile do
       {:benchfella, "~> 0.3.0", only: :dev},
       # cnode helpers
       {:nodex, "~> 0.1.1"}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "Myhtmlex"
     ]
   end
 end

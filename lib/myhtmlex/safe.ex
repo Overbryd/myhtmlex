@@ -12,7 +12,7 @@ defmodule Myhtmlex.Safe do
     end
     myhtml_worker = Path.join(:code.priv_dir(unquote(app)), "myhtml_worker")
     children = [
-      worker(Nodex.Cnode, [%{exec_path: myhtml_worker}, [name: __MODULE__]])
+      worker(Nodex.Cnode, [%{exec_path: myhtml_worker}, [name: Myhtmlex.Safe.Cnode]])
     ]
     Supervisor.start_link(children, strategy: :one_for_one, name: Myhtmlex.Safe.Supervisor)
   end
@@ -22,7 +22,7 @@ defmodule Myhtmlex.Safe do
   end
 
   def decode(bin, flags) do
-    {:ok, res} = Nodex.Cnode.call(__MODULE__, {:decode, bin, flags})
+    {:ok, res} = Nodex.Cnode.call(Myhtmlex.Safe.Cnode, {:decode, bin, flags})
     res
   end
 
