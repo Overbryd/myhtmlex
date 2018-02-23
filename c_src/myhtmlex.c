@@ -136,10 +136,8 @@ read_parse_flags(ErlNifEnv* env, const ERL_NIF_TERM* options)
   unsigned char parse_flags = 0;
   ERL_NIF_TERM flag;
 
-  // only look at 2 flags max (more are not implemented yet)
-  for (int i = 0; i < 2; i++)
+  while (enif_get_list_cell(env, *options, &flag, (ERL_NIF_TERM*)options))
   {
-    if (!enif_get_list_cell(env, *options, &flag, (ERL_NIF_TERM*)options)) break;
     if (!enif_is_atom(env, flag)) return enif_make_badarg(env);
     // set parse flags
     if (enif_compare(flag, ATOM_HTML_ATOMS) == 0)

@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <ctype.h>
 
 #include "erl_interface.h"
 #include "ei.h"
@@ -42,6 +43,10 @@ ETERM*
 build_node_attrs(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* node);
 ETERM*
 err_term(const char* error_atom);
+unsigned char
+read_parse_flags(ETERM* list);
+char*
+lowercase(char* c);
 
 const unsigned char FLAG_HTML_ATOMS       = 1 << 0;
 const unsigned char FLAG_NIL_SELF_CLOSING = 1 << 1;
@@ -219,9 +224,37 @@ decode(state_t* state, ErlMessage* emsg, ETERM* bin, ETERM* args)
     return err_term("myhtml_parse_failed");
   }
 
+  // read parse flags
+  parse_flags = read_parse_flags(args);
+
   // build tree
   myhtml_tree_node_t *root = myhtml_tree_get_document(state->tree);
   return build_tree(&prefab, state->tree, myhtml_node_last_child(root), &parse_flags);
+}
+
+unsigned char
+read_parse_flags(ETERM* list)
+{
+  unsigned char parse_flags = 0;
+  ETERM *flag;
+
+  for (; !ERL_IS_EMPTY_LIST(list); list = ERL_CONS_TAIL(list)) {
+    flag = ERL_CONS_HEAD(list);
+    if (erl_match(erl_format("html_atoms"), flag))
+    {
+      parse_flags |= FLAG_HTML_ATOMS;
+    }
+    else if (erl_match(erl_format("nil_self_closing"), flag))
+    {
+      parse_flags |= FLAG_NIL_SELF_CLOSING;
+    }
+    else if (erl_match(erl_format("comment_tuple3"), flag))
+    {
+      parse_flags |= FLAG_COMMENT_TUPLE3;
+    }
+  }
+
+  return parse_flags;
 }
 
 ETERM*
@@ -229,7 +262,7 @@ build_tree(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* node, unsi
 {
   ETERM* result;
   myhtml_tag_id_t tag_id = myhtml_node_tag_id(node);
-  /* myhtml_namespace_t tag_ns = myhtml_node_namespace(node); */
+  myhtml_namespace_t tag_ns = myhtml_node_namespace(node);
 
   if (tag_id == MyHTML_TAG__TEXT)
   {
@@ -266,14 +299,29 @@ build_tree(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* node, unsi
     size_t tag_name_len;
     const char *tag_name = myhtml_tag_name_by_id(tree, tag_id, &tag_name_len);
     // get namespace of tag
-    /* size_t tag_ns_len; */
-    /* const char *tag_ns_name_ptr = myhtml_namespace_name_by_id(tag_ns, &tag_ns_len); */
-    /* char *tag_ns_buffer; */
-    /* char buffer [tag_ns_len + tag_name_len + 1]; */
-    /* char *tag_string = buffer; */
-    /* size_t tag_string_len; */
+    size_t tag_ns_len;
+    const char *tag_ns_name_ptr = myhtml_namespace_name_by_id(tag_ns, &tag_ns_len);
+    char *tag_ns_buffer;
+    char buffer [tag_ns_len + tag_name_len + 1];
+    char *tag_string = buffer;
+    size_t tag_string_len;
 
-    tag = erl_mk_binary(tag_name, tag_name_len);
+    if (tag_ns != MyHTML_NAMESPACE_HTML)
+    {
+      // tag_ns_name_ptr is unmodifyable, copy it in our tag_ns_buffer to make it modifyable.
+      tag_ns_buffer = malloc(tag_ns_len);
+      strcpy(tag_ns_buffer, tag_ns_name_ptr);
+      // lowercase tag buffer (can be removed, just a nice to have)
+      tag_ns_buffer = lowercase(tag_ns_buffer);
+      // prepend namespace to tag name, e.g. "svg:path"
+      stpcpy(stpcpy(stpcpy(tag_string, tag_ns_buffer), ":"), tag_name);
+      tag_string_len = tag_ns_len + tag_name_len + 1; // +1 for colon
+    }
+    else
+    {
+      stpcpy(tag_string, tag_name);
+      tag_string_len = tag_name_len;
+    }
 
     // attributes
     attrs = build_node_attrs(prefab, tree, node);
@@ -281,9 +329,22 @@ build_tree(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* node, unsi
     // children
     children = build_node_children(prefab, tree, node, parse_flags);
 
-    /* ETERM* tuple3[] = {tag, attrs, children}; */
-    /* result = erl_mk_tuple(tuple3, 3); */
-    result = erl_format("{~w, ~w, ~w}", tag, attrs, children);
+    if (!(*parse_flags & FLAG_HTML_ATOMS) || (tag_id == MyHTML_TAG__UNDEF || tag_id == MyHTML_TAG_LAST_ENTRY || tag_ns != MyHTML_NAMESPACE_HTML))
+    {
+      tag = erl_mk_binary(tag_string, tag_string_len);
+      /* ETERM* tuple3[] = {tag, attrs, children}; */
+      /* result = erl_mk_tuple(tuple3, 3); */
+      result = erl_format("{~w, ~w, ~w}", tag, attrs, children);
+    }
+    else
+    {
+      // tag = erl_mk_atom(tag_string);
+      tag = erl_mk_atom(tag_string);
+      /* ETERM* tuple3[] = {tag, attrs, children}; */
+      /* result = erl_mk_tuple(tuple3, 3); */
+      result = erl_format("{~w, ~w, ~w}", tag, attrs, children);
+    }
+
   }
 
   return result;
@@ -368,3 +429,16 @@ build_node_attrs(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* node
 
   return list;
 }
+
+char*
+lowercase(char* c)
+{
+  char* p = c;
+  while(*p)
+  {
+    *p = tolower((unsigned char)*p);
+    p++;
+  }
+  return c;
+}
+

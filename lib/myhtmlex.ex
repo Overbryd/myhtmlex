@@ -23,7 +23,7 @@ defmodule Myhtmlex do
       Finished in 7.52 seconds
 
       ## FileSizesBench
-      benchmark name                iterations   average time 
+      benchmark name                iterations   average time
       wikipedia_hyperlink.html 97k        1000   1385.86 µs/op
       w3c_html5.html 131k                 1000   2179.30 µs/op
       github_trending_js.html 341k         500   5686.21 µs/op
@@ -118,7 +118,7 @@ defmodule Myhtmlex do
       iex> Myhtmlex.decode(html, format: [:html_atoms, :nil_self_closing, :comment_tuple3])
       {:html, [],
        [{:head, [], []},
-        {:body, [], [{:comment, " a comment "}, {"unknown", [], nil}]}]}
+        {:body, [], [{:comment, [], " a comment "}, {"unknown", [], nil}]}]}
 
   """
   @spec decode(String.t, format: [format_flag()]) :: tree()

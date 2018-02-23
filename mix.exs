@@ -50,7 +50,7 @@ defmodule Myhtmlex.Mixfile do
       mod: {Myhtmlex.Safe, []},
       registered: [Myhtmlex.Safe],
       env: [
-        mode: Myhtmlex.Nif
+        mode: Myhtmlex.Safe
       ]
     ]
   end
@@ -71,7 +71,7 @@ end
 defmodule Mix.Tasks.Compile.MyhtmlexMake do
   @artifacts [
     "priv/myhtmlex.so",
-    "priv/cclient"
+    "priv/myhtml_worker"
   ]
 
   def run(_) do

@@ -13,20 +13,20 @@ defmodule Myhtmlex.Safe do
     unless Node.alive? do
       Nodex.Distributed.up
     end
-    cclient = :filename.join(:code.priv_dir(unquote(app)), 'cclient')
+    myhtml_worker = Path.join(:code.priv_dir(unquote(app)), "myhtml_worker")
     children = [
-      worker(Nodex.Cnode, [%{exec_path: cclient}, [name: __MODULE__]])
+      worker(Nodex.Cnode, [%{exec_path: myhtml_worker}, [name: __MODULE__]])
     ]
     Supervisor.start_link(children, strategy: :one_for_one, name: Myhtmlex.Safe.Supervisor)
   end
 
   @doc false
   def decode(bin) do
-    decode(bin, format: [])
+    decode(bin, [])
   end
 
   @doc false
-  def decode(bin, format: flags) do
+  def decode(bin, flags) do
     {:ok, res} = Nodex.Cnode.call(__MODULE__, {:decode, bin, flags})
     res
   end
