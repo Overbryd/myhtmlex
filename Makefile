@@ -74,8 +74,12 @@ clean: clean-myhtml
 clean-myhtml:
 	$(MAKE) -C $(MYHTML_PATH) clean
 
+# publishing the package and docs separately is required
+# otherwise the build artifacts are included in the package
+# and the tarball gets too big to be published
 publish: clean
-	$(MIX) hex.publish
+	$(MIX) hex.publish package
+	$(MIX) hex.publish docs
 
 test:
 	$(MIX) test

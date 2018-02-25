@@ -16,12 +16,8 @@ test -d package-test || mkdir package-test
 rm -rf package-test/*
 
 mkdir package-test/myhtmlex-local
-mix hex.build
-mv myhtmlex-*.tar package-test/myhtmlex-local/
-cd package-test/myhtmlex-local
-tar -xf *.tar
-tar -xzf *.tar.gz
-cd ..
+mix hex.build --unpack -o package-test/myhtmlex-local
+cd package-test
 mix new myhtmlex_pkg_test
 cd myhtmlex_pkg_test
 

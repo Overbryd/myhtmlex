@@ -61,7 +61,7 @@ defmodule Myhtmlex.Mixfile do
   defp deps do
     [
       # documentation helpers
-      {:ex_doc, ">= 0.0.0", only: :docs},
+      {:ex_doc, ">= 0.0.0", only: :dev},
       # benchmarking helpers
       {:benchfella, "~> 0.3.0", only: :dev},
       # cnode helpers
