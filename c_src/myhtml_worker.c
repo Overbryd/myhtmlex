@@ -345,6 +345,11 @@ build_tree(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* node, unsi
       result = erl_format("{~w, ~w, ~w}", tag, attrs, children);
     }
 
+    // free allocated resources
+    if (tag_ns != MyHTML_NAMESPACE_HTML)
+    {
+      free(tag_ns_buffer);
+    }
   }
 
   return result;

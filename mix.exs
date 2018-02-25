@@ -4,7 +4,7 @@ defmodule Myhtmlex.Mixfile do
   def project do
     [
       app: :myhtmlex,
-      version: "0.2.0",
+      version: "0.2.1",
       elixir: "~> 1.5",
       deps: deps(),
       package: package(),
