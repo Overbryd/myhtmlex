@@ -31,7 +31,7 @@ defmodule Myhtmlex do
   ## Configuration
 
   The module you are calling into is always `Myhtmlex` and depending on your application configuration,
-  it chooses between the underlying implementations `Myhtmlex.Safe` (default) and `Myhtmlex.Nif`.
+  it chooses between the underlying implementations `Myhtmlex.Safe` (default) and `:myhtmlex_nif`.
 
   Erlang interoperability is a tricky mine-field.
   You can call into C directly using native implemented functions (Nif). But this comes with the risk,
@@ -67,11 +67,11 @@ defmodule Myhtmlex do
             ]
           end
 
-  2. Configure the mode to `Myhtmlex.Nif`
+  2. Configure the mode to `:myhtmlex_nif`
 
       e.g. in `config/config.exs`
 
-          config :myhtmlex, mode: Myhtmlex.Nif
+          config :myhtmlex, mode: :myhtmlex_nif
 
   3. Bonus: You can [open up in-memory references to parsed trees](https://hexdocs.pm/myhtmlex/Myhtmlex.html#open/1), without parsing + mapping erlang terms in one go
   """
@@ -88,7 +88,7 @@ defmodule Myhtmlex do
   @type format_flag() :: :html_atoms | :nil_self_closing | :comment_tuple3
 
   defp module() do
-    Application.get_env(:myhtmlex, :mode, Myhtmlex.Nif)
+    Application.get_env(:myhtmlex, :mode, :myhtmlex_nif)
   end
 
   @doc """
@@ -111,9 +111,7 @@ defmodule Myhtmlex do
       {"html", [], [{"head", [], []}, {"body", [], [{"br", [], []}]}]}
   """
   @spec decode(String.t) :: tree()
-  def decode(bin) do
-    decode(bin, format: [])
-  end
+  defdelegate decode(bin), to: :myhtmlex
 
   @doc """
   Returns a tree representation from the given html string.
@@ -153,24 +151,17 @@ defmodule Myhtmlex do
   Returns a reference to an internally parsed myhtml_tree_t. (Nif only!)
   """
   @spec open(String.t) :: reference()
-  def open(bin) do
-    Myhtmlex.Nif.open(bin)
-  end
+  defdelegate open(bin), to: :myhtmlex
 
   @doc """
   Returns a tree representation from the given reference. See `decode/1` for example output.  (Nif only!)
   """
   @spec decode_tree(reference()) :: tree()
-  def decode_tree(ref) do
-    Myhtmlex.Nif.decode_tree(ref)
-  end
+  defdelegate decode_tree(ref), to: :myhtmlex
 
   @doc """
   Returns a tree representation from the given reference. See `decode/2` for options and example output. (Nif only!)
   """
   @spec decode_tree(reference(), format: [format_flag()]) :: tree()
-  def decode_tree(ref, format: flags) do
-    Myhtmlex.Nif.decode_tree(ref, flags)
-  end
+  defdelegate decode_tree(ref, format_opt), to: :myhtmlex
 end
-

@@ -9,6 +9,7 @@ defmodule Myhtmlex.Mixfile do
       deps: deps(),
       package: package(),
       compilers: [:myhtmlex_make] ++ Mix.compilers,
+      erlc_paths: ["src"],
       build_embedded: Mix.env == :prod,
       start_permanent: Mix.env == :prod,
       name: "Myhtmlex",
@@ -32,6 +33,7 @@ defmodule Myhtmlex.Mixfile do
         "MyHTML" => "https://github.com/lexborisov/myhtml"
       },
       files: [
+        "src",
         "lib",
         "c_src",
         "priv/.gitignore",
@@ -103,4 +105,3 @@ defmodule Mix.Tasks.Compile.MyhtmlexMake do
     :ok
   end
 end
-
