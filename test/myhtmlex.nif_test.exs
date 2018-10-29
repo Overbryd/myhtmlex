@@ -1,5 +1,5 @@
 defmodule Myhtmlex.NifTest do
-  use MyhtmlexSharedTests, module: Myhtmlex.Nif
+  use MyhtmlexSharedTests, module: :myhtmlex_nif
 
   test "parse a larger file (131K)" do
     html = File.read!("bench/github_trending_js.html")

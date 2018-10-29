@@ -422,5 +422,4 @@ static ErlNifFunc funcs[] =
   {"decode_tree", 2, nif_decode_tree, ERL_NIF_DIRTY_JOB_CPU_BOUND}
 };
 
-ERL_NIF_INIT(Elixir.Myhtmlex.Nif, funcs, &load, &reload, &upgrade, &unload)
-
+ERL_NIF_INIT(myhtmlex_nif, funcs, &load, &reload, &upgrade, &unload)
