@@ -3,7 +3,7 @@ defmodule CnodeFileSizesBench do
 
   setup_all do
     Nodex.Distributed.up
-    {:ok, _pid} = Nodex.Cnode.start_link(%{exec_path: "priv/myhtml_worker"}, name: Myhtmlex.Safe)
+    {:ok, _pid} = Nodex.Cnode.start_link(%{exec_path: "priv/myhtml_worker"}, name: Myhtmlex.Safe.Cnode)
     contents = {
       File.read!("bench/github_trending_js.html"),
       File.read!("bench/w3c_html5.html"),
