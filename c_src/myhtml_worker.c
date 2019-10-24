@@ -325,21 +325,20 @@ ETERM* build_tree(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* nod
       // get namespace of tag
       size_t tag_ns_len;
       const char *tag_ns_name_ptr = myhtml_namespace_name_by_id(tag_ns, &tag_ns_len);
-      char *tag_ns_buffer;
-      char buffer [tag_ns_len + tag_name_len + 1];
+      char buffer [tag_ns_len + tag_name_len + 2];
       char *tag_string = buffer;
       size_t tag_string_len;
 
       if (tag_ns != MyHTML_NAMESPACE_HTML)
       {
         // tag_ns_name_ptr is unmodifyable, copy it in our tag_ns_buffer to make it modifyable.
-        tag_ns_buffer = malloc(tag_ns_len);
+        char tag_ns_buffer[tag_ns_len];
         strcpy(tag_ns_buffer, tag_ns_name_ptr);
-        // lowercase tag buffer (can be removed, just a nice to have)
-        tag_ns_buffer = lowercase(tag_ns_buffer);
-        // prepend namespace to tag name, e.g. "svg:path"
-        stpcpy(stpcpy(stpcpy(tag_string, tag_ns_buffer), ":"), tag_name);
+        lowercase(tag_ns_buffer);
+
         tag_string_len = tag_ns_len + tag_name_len + 1; // +1 for colon
+	// +1 for the null-byte, which we won't use because erlang binary strings are not null-terminated
+	snprintf(tag_string, tag_string_len + 1, "%s:%s", tag_ns_buffer, tag_name);
       }
       else
       {
@@ -357,12 +356,6 @@ ETERM* build_tree(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* nod
         tag = erl_mk_atom(tag_string);
 
       result = erl_format("{~w, ~w, ~w}", tag, attrs, children);
-
-      // free allocated resources
-      if (tag_ns != MyHTML_NAMESPACE_HTML)
-      {
-        free(tag_ns_buffer);
-      }
     }
     if (stack.used == 0) {
       tstack_free(&stack);
