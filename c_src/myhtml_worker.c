@@ -352,15 +352,11 @@ ETERM* build_tree(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* nod
 
 
       if (!(*parse_flags & FLAG_HTML_ATOMS) || (tag_id == MyHTML_TAG__UNDEF || tag_id == MyHTML_TAG_LAST_ENTRY || tag_ns != MyHTML_NAMESPACE_HTML))
-      {
         tag = erl_mk_binary(tag_string, tag_string_len);
-        result = erl_format("{~w, ~w, ~w}", tag, attrs, children);
-      }
       else
-      {
         tag = erl_mk_atom(tag_string);
-        result = erl_format("{~w, ~w, ~w}", tag, attrs, children);
-      }
+
+      result = erl_format("{~w, ~w, ~w}", tag, attrs, children);
 
       // free allocated resources
       if (tag_ns != MyHTML_NAMESPACE_HTML)
