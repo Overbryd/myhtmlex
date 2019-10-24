@@ -303,11 +303,7 @@ ETERM* build_tree(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* nod
       const char* node_comment = myhtml_node_text(current_node, &comment_len);
 
       // For <!----> myhtml_node_text will return a null pointer, which will make erl_format segfault
-      if(comment_len == 0) {
-        node_comment= (char*) "";
-      }
-
-      ETERM* comment = erl_mk_binary(node_comment, comment_len);
+      ETERM* comment = erl_mk_binary(node_comment ?: "", comment_len);
 
       if (*parse_flags & FLAG_COMMENT_TUPLE3)
       {
