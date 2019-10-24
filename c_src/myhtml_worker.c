@@ -343,7 +343,7 @@ ETERM* build_tree(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* nod
       }
       else
       {
-        stpcpy(tag_string, tag_name);
+        strncpy(tag_string, tag_name, sizeof(buffer));
         tag_string_len = tag_name_len;
       }
 
