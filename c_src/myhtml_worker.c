@@ -337,8 +337,7 @@ ETERM* build_tree(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* nod
         lowercase(tag_ns_buffer);
 
         tag_string_len = tag_ns_len + tag_name_len + 1; // +1 for colon
-	// +1 for the null-byte, which we won't use because erlang binary strings are not null-terminated
-	snprintf(tag_string, tag_string_len + 1, "%s:%s", tag_ns_buffer, tag_name);
+	snprintf(tag_string, sizeof(buffer), "%s:%s", tag_ns_buffer, tag_name);
       }
       else
       {
