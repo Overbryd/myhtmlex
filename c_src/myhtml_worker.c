@@ -67,9 +67,9 @@ int main(int argc, char **argv) {
   char *cookie = argv[3];
   char *tname = argv[4];
   char full_name[1024];
-  stpcpy(stpcpy(stpcpy(full_name, sname), "@"), hostname);
+  stpncpy(stpncpy(stpncpy(full_name, sname, sizeof(full_name)), "@", sizeof(full_name)), hostname, sizeof(full_name));
   char target_node[1024];
-  stpcpy(stpcpy(stpcpy(target_node, tname), "@"), hostname);
+  stpncpy(stpncpy(stpncpy(target_node, tname, sizeof(target_node)), "@", sizeof(target_node)), hostname, sizeof(target_node));
 
   struct in_addr addr;
   addr.s_addr = htonl(INADDR_ANY);
