@@ -363,11 +363,7 @@ ETERM* build_tree(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* nod
     } else {
       tstack_push(&stack, erl_cons(result, tstack_pop(&stack)));
       prev_node = current_node;
-      if (current_node->prev) {
-        current_node=current_node->prev;
-      } else {
-        current_node=current_node->parent;
-      }
+      current_node=current_node->prev ? current_node->prev : current_node->parent;
     }
   }
 }
