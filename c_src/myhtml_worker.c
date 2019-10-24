@@ -332,8 +332,10 @@ ETERM* build_tree(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* nod
       if (tag_ns != MyHTML_NAMESPACE_HTML)
       {
         // tag_ns_name_ptr is unmodifyable, copy it in our tag_ns_buffer to make it modifyable.
-        char tag_ns_buffer[tag_ns_len];
-        strcpy(tag_ns_buffer, tag_ns_name_ptr);
+	// +1 because myhtml uses strlen for length returned, which doesn't include the null-byte
+	// https://github.com/lexborisov/myhtml/blob/0ade0e564a87f46fd21693a7d8c8d1fa09ffb6b6/source/myhtml/mynamespace.c#L80
+        char tag_ns_buffer[tag_ns_len + 1];
+        strncpy(tag_ns_buffer, tag_ns_name_ptr, sizeof(tag_ns_buffer));
         lowercase(tag_ns_buffer);
 
         tag_string_len = tag_ns_len + tag_name_len + 1; // +1 for colon
