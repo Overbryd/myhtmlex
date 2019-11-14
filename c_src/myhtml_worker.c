@@ -13,6 +13,8 @@
 #include "erl_interface.h"
 #include "ei.h"
 
+#include "tstack.h"
+
 #include <myhtml/myhtml.h>
 #include <myhtml/mynamespace.h>
 
@@ -37,8 +39,6 @@ ETERM*
 decode(state_t* state, ErlMessage* emsg, ETERM* bin, ETERM* args);
 ETERM*
 build_tree(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* node, unsigned char* parse_flags);
-ETERM*
-build_node_children(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* parent, unsigned char* parse_flags);
 ETERM*
 build_node_attrs(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* node);
 ETERM*
@@ -67,9 +67,9 @@ int main(int argc, char **argv) {
   char *cookie = argv[3];
   char *tname = argv[4];
   char full_name[1024];
-  stpcpy(stpcpy(stpcpy(full_name, sname), "@"), hostname);
+  stpncpy(stpncpy(stpncpy(full_name, sname, sizeof(full_name)), "@", sizeof(full_name)), hostname, sizeof(full_name));
   char target_node[1024];
-  stpcpy(stpcpy(stpcpy(target_node, tname), "@"), hostname);
+  stpncpy(stpncpy(stpncpy(target_node, tname, sizeof(target_node)), "@", sizeof(target_node)), hostname, sizeof(target_node));
 
   struct in_addr addr;
   addr.s_addr = htonl(INADDR_ANY);
@@ -208,6 +208,7 @@ decode(state_t* state, ErlMessage* emsg, ETERM* bin, ETERM* args)
   prefab.atom_comment = erl_mk_atom("comment");
   prefab.empty_list = erl_mk_empty_list();
 
+
   if (!ERL_IS_BINARY(bin) || !ERL_IS_LIST(args))
   {
     return err_term("badarg");
@@ -256,140 +257,116 @@ read_parse_flags(ETERM* list)
 
   return parse_flags;
 }
-
-ETERM*
-build_tree(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* node, unsigned char* parse_flags)
+ETERM* build_tree(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* node, unsigned char* parse_flags)
 {
   ETERM* result;
-  myhtml_tag_id_t tag_id = myhtml_node_tag_id(node);
-  myhtml_namespace_t tag_ns = myhtml_node_namespace(node);
+  myhtml_tree_node_t* prev_node = NULL;
 
-  if (tag_id == MyHTML_TAG__TEXT)
-  {
-    size_t text_len;
-    const char* node_text = myhtml_node_text(node, &text_len);
-    result = erl_mk_binary(node_text, text_len);
-  }
-  else if (tag_id == MyHTML_TAG__COMMENT)
-  {
-    size_t comment_len;
-    const char* node_comment = myhtml_node_text(node, &comment_len);
-    ETERM* comment = erl_mk_binary(node_comment, comment_len);
-
-    if (*parse_flags & FLAG_COMMENT_TUPLE3)
-    {
-      /* ETERM* tuple3[] = {prefab->atom_comment, prefab->empty_list, comment}; */
-      /* result = erl_mk_tuple(tuple3, 3); */
-      result = erl_format("{comment, [], ~w}", comment);
-    }
-    else
-    {
-      /* ETERM* tuple2[] = {prefab->atom_comment, comment}; */
-      /* result = erl_mk_tuple(tuple2, 2); */
-      result = erl_format("{comment, ~w}", comment);
-    }
-  }
-  else
-  {
-    ETERM* tag;
-    ETERM* attrs;
+  tstack stack;
+  tstack_init(&stack, 30);
+  for(myhtml_tree_node_t* current_node = node;;) {
     ETERM* children;
 
-    // get name of tag
-    size_t tag_name_len;
-    const char *tag_name = myhtml_tag_name_by_id(tree, tag_id, &tag_name_len);
-    // get namespace of tag
-    size_t tag_ns_len;
-    const char *tag_ns_name_ptr = myhtml_namespace_name_by_id(tag_ns, &tag_ns_len);
-    char *tag_ns_buffer;
-    char buffer [tag_ns_len + tag_name_len + 1];
-    char *tag_string = buffer;
-    size_t tag_string_len;
+    // If we are going up the tree, get the children from the stack
+    if (prev_node && !(current_node->next == prev_node || current_node->parent == prev_node)) {
+      children = tstack_pop(&stack);
+    // Else, try to go down the tree
+    } else if(current_node->last_child) {
+      tstack_push(&stack, erl_mk_empty_list());
 
-    if (tag_ns != MyHTML_NAMESPACE_HTML)
+      prev_node = current_node;
+      current_node=current_node->last_child;
+
+      continue;
+    } else {
+      if ((myhtml_node_is_close_self(current_node)  || myhtml_node_is_void_element(current_node))
+      && (*parse_flags & FLAG_NIL_SELF_CLOSING)) {
+        children = prefab->atom_nil;
+      } else {
+        children = prefab->empty_list;
+      }
+    }
+
+    myhtml_tag_id_t tag_id = myhtml_node_tag_id(current_node);
+    myhtml_namespace_t tag_ns = myhtml_node_namespace(current_node);
+
+    if (tag_id == MyHTML_TAG__TEXT)
     {
-      // tag_ns_name_ptr is unmodifyable, copy it in our tag_ns_buffer to make it modifyable.
-      tag_ns_buffer = malloc(tag_ns_len);
-      strcpy(tag_ns_buffer, tag_ns_name_ptr);
-      // lowercase tag buffer (can be removed, just a nice to have)
-      tag_ns_buffer = lowercase(tag_ns_buffer);
-      // prepend namespace to tag name, e.g. "svg:path"
-      stpcpy(stpcpy(stpcpy(tag_string, tag_ns_buffer), ":"), tag_name);
-      tag_string_len = tag_ns_len + tag_name_len + 1; // +1 for colon
+      size_t text_len;
+
+      const char* node_text = myhtml_node_text(current_node, &text_len);
+      result = erl_mk_binary(node_text, text_len);
+    }
+    else if (tag_id == MyHTML_TAG__COMMENT)
+    {
+      size_t comment_len;
+      const char* node_comment = myhtml_node_text(current_node, &comment_len);
+
+      // For <!----> myhtml_node_text will return a null pointer, which will make erl_format segfault
+      ETERM* comment = erl_mk_binary(node_comment ? node_comment : "", comment_len);
+
+      if (*parse_flags & FLAG_COMMENT_TUPLE3)
+      {
+        result = erl_format("{comment, [], ~w}", comment);
+      }
+      else
+      {
+        result = erl_format("{comment, ~w}", comment);
+      }
     }
     else
     {
-      stpcpy(tag_string, tag_name);
-      tag_string_len = tag_name_len;
-    }
+      ETERM* tag;
+      ETERM* attrs;
 
-    // attributes
-    attrs = build_node_attrs(prefab, tree, node);
+      // get name of tag
+      size_t tag_name_len;
+      const char *tag_name = myhtml_tag_name_by_id(tree, tag_id, &tag_name_len);
+      // get namespace of tag
+      size_t tag_ns_len;
+      const char *tag_ns_name_ptr = myhtml_namespace_name_by_id(tag_ns, &tag_ns_len);
+      char buffer [tag_ns_len + tag_name_len + 2];
+      char *tag_string = buffer;
+      size_t tag_string_len;
 
-    // children
-    children = build_node_children(prefab, tree, node, parse_flags);
+      if (tag_ns != MyHTML_NAMESPACE_HTML)
+      {
+        // tag_ns_name_ptr is unmodifyable, copy it in our tag_ns_buffer to make it modifyable.
+	// +1 because myhtml uses strlen for length returned, which doesn't include the null-byte
+	// https://github.com/lexborisov/myhtml/blob/0ade0e564a87f46fd21693a7d8c8d1fa09ffb6b6/source/myhtml/mynamespace.c#L80
+        char tag_ns_buffer[tag_ns_len + 1];
+        strncpy(tag_ns_buffer, tag_ns_name_ptr, sizeof(tag_ns_buffer));
+        lowercase(tag_ns_buffer);
 
-    if (!(*parse_flags & FLAG_HTML_ATOMS) || (tag_id == MyHTML_TAG__UNDEF || tag_id == MyHTML_TAG_LAST_ENTRY || tag_ns != MyHTML_NAMESPACE_HTML))
-    {
-      tag = erl_mk_binary(tag_string, tag_string_len);
-      /* ETERM* tuple3[] = {tag, attrs, children}; */
-      /* result = erl_mk_tuple(tuple3, 3); */
+        tag_string_len = tag_ns_len + tag_name_len + 1; // +1 for colon
+	snprintf(tag_string, sizeof(buffer), "%s:%s", tag_ns_buffer, tag_name);
+      }
+      else
+      {
+        strncpy(tag_string, tag_name, sizeof(buffer));
+        tag_string_len = tag_name_len;
+      }
+
+      // attributes
+      attrs = build_node_attrs(prefab, tree, current_node);
+
+
+      if (!(*parse_flags & FLAG_HTML_ATOMS) || (tag_id == MyHTML_TAG__UNDEF || tag_id == MyHTML_TAG_LAST_ENTRY || tag_ns != MyHTML_NAMESPACE_HTML))
+        tag = erl_mk_binary(tag_string, tag_string_len);
+      else
+        tag = erl_mk_atom(tag_string);
+
       result = erl_format("{~w, ~w, ~w}", tag, attrs, children);
     }
-    else
-    {
-      // tag = erl_mk_atom(tag_string);
-      tag = erl_mk_atom(tag_string);
-      /* ETERM* tuple3[] = {tag, attrs, children}; */
-      /* result = erl_mk_tuple(tuple3, 3); */
-      result = erl_format("{~w, ~w, ~w}", tag, attrs, children);
-    }
-
-    // free allocated resources
-    if (tag_ns != MyHTML_NAMESPACE_HTML)
-    {
-      free(tag_ns_buffer);
+    if (stack.used == 0) {
+      tstack_free(&stack);
+      return result;
+    } else {
+      tstack_push(&stack, erl_cons(result, tstack_pop(&stack)));
+      prev_node = current_node;
+      current_node=current_node->prev ? current_node->prev : current_node->parent;
     }
   }
-
-  return result;
-}
-
-ETERM*
-build_node_children(prefab_t* prefab, myhtml_tree_t* tree, myhtml_tree_node_t* parent, unsigned char* parse_flags)
-{
-  if (myhtml_node_is_close_self(parent) && (*parse_flags & FLAG_NIL_SELF_CLOSING))
-  {
-    /* prefab->atom_nil; */
-    return erl_mk_atom("nil");
-  }
-
-  myhtml_tree_node_t* child = myhtml_node_last_child(parent);
-  if (child == NULL)
-  {
-    if (myhtml_node_is_void_element(parent) && (*parse_flags & FLAG_NIL_SELF_CLOSING))
-    {
-      /* return prefab->atom_nil; */
-      return erl_mk_atom("nil");
-    }
-    /* else */
-    /* { */
-    /*   return prefab->empty_list; */
-    /* } */
-  }
-
-  ETERM* list = erl_mk_empty_list();
-
-  while (child)
-  {
-    ETERM* node_tuple = build_tree(prefab, tree, child, parse_flags);
-    list = erl_cons(node_tuple, list);
-
-    // get previous child, building the list from reverse
-    child = myhtml_node_prev(child);
-  }
-
-  return list;
 }
 
 ETERM*
